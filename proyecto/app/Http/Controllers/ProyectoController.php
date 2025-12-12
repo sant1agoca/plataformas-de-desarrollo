@@ -1,51 +1,49 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers; // <<-- ¡Namespace Web!
 
 use Illuminate\Http\Request;
 use App\Models\Proyecto;
-use App\Models\Usuario;
-use Illuminate\Validation\Rule; // Necesario si queremos usar reglas de validación avanzadas
+use App\Models\Usuario; // Asumo que usas este modelo para el FK
+use Illuminate\Validation\Rule;
 
 class ProyectoController extends Controller
 {
-    /**
-     * Proteger módulo: Requiere que el usuario esté autenticado.
-     */
+    // Proteger las rutas Web
     public function __construct()
     {
         $this->middleware('auth');
     }
 
     /**
-     * Display a listing of the resource (READ).
+     * Listar Proyectos (Devuelve Vista)
      */
     public function index()
     {
-        // Carga todos los proyectos incluyendo el usuario relacionado (Eager Loading)
         $proyectos = Proyecto::with('usuario')->get();
-        return view('proyectos.index', compact('proyectos'));
+        return view('proyectos.index', compact('proyectos')); // VISTA
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Mostrar formulario de creación (Devuelve Vista)
      */
     public function create()
     {
-        // Pasa todos los usuarios al formulario para la selección
         $usuarios = Usuario::all();
-        return view('proyectos.create', compact('usuarios'));
+        return view('proyectos.create', compact('usuarios')); // VISTA
     }
 
     /**
-     * Store a newly created resource in storage (CREATE).
+     * Guardar nuevo proyecto desde la web (Redirección)
      */
     public function store(Request $request)
     {
+        // Validaciones para la parte Web
         $request->validate([
-            'titulo' => ['required', 'string', 'max:255'],
+            'nombre' => ['required', 'string', 'max:255'], // Corregido: usa 'nombre' no 'titulo'
             'descripcion' => ['nullable', 'string'],
-            // Asegura que el usuario_id exista en la tabla 'usuarios'
+            'fecha_inicio' => ['required', 'date'],
+            'fecha_fin' => ['nullable', 'date'],
             'usuario_id' => ['required', 'exists:usuarios,id'], 
         ]);
 
@@ -56,40 +54,36 @@ class ProyectoController extends Controller
     }
 
     /**
-     * Display the specified resource.
-     * Implementa Model Binding: Recibe la instancia de Proyecto en lugar del ID.
+     * Mostrar detalle del proyecto (Devuelve Vista)
      */
     public function show(Proyecto $proyecto)
     {
-        // El proyecto ya está cargado por Laravel. Cargamos la relación si es necesario.
         $proyecto->load('usuario');
-        return view('proyectos.show', compact('proyecto'));
+        return view('proyectos.show', compact('proyecto')); // VISTA
     }
 
     /**
-     * Show the form for editing the specified resource.
-     * Implementa Model Binding.
+     * Mostrar formulario de edición (Devuelve Vista)
      */
     public function edit(Proyecto $proyecto)
     {
-        // El proyecto ya está cargado.
         $usuarios = Usuario::all();
-        return view('proyectos.edit', compact('proyecto', 'usuarios'));
+        return view('proyectos.edit', compact('proyecto', 'usuarios')); // VISTA
     }
 
     /**
-     * Update the specified resource in storage (UPDATE).
-     * Implementa Model Binding.
+     * Actualizar proyecto (Redirección)
      */
     public function update(Request $request, Proyecto $proyecto)
     {
         $request->validate([
-            'titulo' => ['required', 'string', 'max:255'],
+            'nombre' => ['required', 'string', 'max:255'], // Corregido
             'descripcion' => ['nullable', 'string'],
+            'fecha_inicio' => ['required', 'date'],
+            'fecha_fin' => ['nullable', 'date'],
             'usuario_id' => ['required', 'exists:usuarios,id'],
         ]);
 
-        // Ya no necesitamos findOrFail($id)
         $proyecto->update($request->all());
 
         return redirect()->route('proyectos.index')
@@ -97,12 +91,10 @@ class ProyectoController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage (DELETE).
-     * Implementa Model Binding.
+     * Eliminar proyecto (Redirección)
      */
     public function destroy(Proyecto $proyecto)
     {
-        // Ya no necesitamos findOrFail($id) ni Proyecto::destroy()
         $proyecto->delete(); 
         
         return redirect()->route('proyectos.index')

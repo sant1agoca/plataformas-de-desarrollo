@@ -2,29 +2,25 @@
 
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
+// CORRECCIONES CRÍTICAS: Asegurar que todos los controladores Web estén importados
 use App\Http\Controllers\UsuarioController; 
 use App\Http\Controllers\ProyectoController; 
-use App\Http\Controllers\AdminController; // Importación del nuevo controlador
+use App\Http\Controllers\AdminController; 
+
 
 /*
 |--------------------------------------------------------------------------
 | Web Routes
 |--------------------------------------------------------------------------
-|
-| Aquí registras tus rutas web.
-|
 */
 
 // --- Rutas de Autenticación (Login, Register, Logout) ---
-// Debe ir al inicio para que el flujo de autenticación esté disponible.
 require __DIR__.'/auth.php';
 
 // --- Ruta de inicio ---
-// Redirige la raíz a la lista de usuarios.
 Route::get('/', function () {
-    // Si el usuario ya está autenticado, puede ir a 'usuarios.index',
-    // sino, será redirigido al login por el middleware.
-    return redirect()->route('usuarios.index');
+    // Redirige al dashboard por defecto después de loguearse
+    return redirect()->route('dashboard'); 
 });
 
 // -----------------------------------------------------------------
@@ -32,7 +28,7 @@ Route::get('/', function () {
 // -----------------------------------------------------------------
 Route::middleware('auth')->group(function () {
     
-    // Ruta del Dashboard (Requiere autenticación y verificación de email)
+    // Ruta del Dashboard
     Route::get('/dashboard', function () {
         return view('dashboard');
     })->middleware('verified')->name('dashboard');
@@ -40,13 +36,13 @@ Route::middleware('auth')->group(function () {
     // Rutas CRUD de Usuarios
     Route::resource('usuarios', UsuarioController::class);
 
-    // Rutas CRUD de Proyectos
+    // Rutas CRUD de Proyectos (Para las vistas Blade)
     Route::resource('proyectos', ProyectoController::class);
 
-    // Rutas de Administración (Protegida por el middleware 'role:admin')
+    // Rutas de Administración (Ya corregida la importación de AdminController)
     Route::get('/admin', [AdminController::class, 'index'])->middleware('role:admin')->name('admin.index');
 
-    // Rutas de perfil (generadas por defecto por Laravel)
+    // Rutas de perfil
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
