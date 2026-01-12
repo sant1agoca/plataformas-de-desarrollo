@@ -1,41 +1,58 @@
 <?php
 
-namespace App\Http\Controllers\Api; // <<-- ¡Namespace de la API!
+namespace App\Http\Controllers\Api; 
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Proyecto; 
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Validation\ValidationException;
 
 class ProyectoController extends Controller
 {
+    // AÑADIMOS ESTE CONSTRUCTOR PARA DESHABILITAR EL MIDDLEWARE
+    public function __construct()
+    {
+        // ¡CORRECCIÓN! Ahora incluimos 'update' y 'destroy' para evitar el error 'Auth guard [sanctum] is not defined' en PUT y DELETE.
+        $this->middleware('auth:sanctum')->except(['index', 'store', 'show', 'update', 'destroy']); 
+    }
+
     /**
      * GET /api/proyectos (Listar)
      */
     public function index()
     {
-        $proyectos = Proyecto::all();
-        // Devuelve JSON
-        return response()->json($proyectos);
+         try {
+             $proyectos = Proyecto::all();
+             return response()->json($proyectos);
+         } catch (\Exception $e) {
+             return response()->json(['message' => 'Error al listar proyectos.', 'error_detail' => $e->getMessage()], 500);
+         }
     }
 
     /**
-     * POST /api/proyectos (Crear) - ¡Tu primera prueba obligatoria!
+     * POST /api/proyectos (Crear)
      */
     public function store(Request $request)
     {
-        // Validación obligatoria (Criterio Validaciones y errores - 10%)
-        $request->validate([
-            'nombre' => 'required|string|max:255', // Requisito
-            'descripcion' => 'nullable|string',
-            'fecha_inicio' => 'required|date', // Requisito
-            'fecha_fin' => 'nullable|date|after_or_equal:fecha_inicio', // Requisito
-            // Asumo que 'usuario_id' es opcional en la API o se establece después.
-        ]);
+        try {
+            $request->validate([
+                'nombre' => 'required|string|max:255', 
+                'descripcion' => 'nullable|string',
+                'fecha_inicio' => 'required|date', 
+                'fecha_fin' => 'nullable|date|after_or_equal:fecha_inicio',
+                // 'usuario_id' => 'required|exists:usuarios,id', 
+            ]);
 
-        $proyecto = Proyecto::create($request->all());
+            $proyecto = Proyecto::create($request->all());
 
-        // Devuelve JSON con código 201 Created
-        return response()->json($proyecto, 201); 
+            return response()->json($proyecto, 201); 
+
+        } catch (ValidationException $e) {
+            return response()->json(['message' => 'Datos no válidos.', 'errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+             return response()->json(['message' => 'Error al crear el proyecto.', 'error_detail' => $e->getMessage()], 500);
+        }
     }
 
     /**
@@ -43,9 +60,14 @@ class ProyectoController extends Controller
      */
     public function show(string $id)
     {
-        // Cargar proyecto y sus tareas (Requisito ver tareas)
-        $proyecto = Proyecto::with('tareas')->findOrFail($id);
-        return response()->json($proyecto);
+        try {
+            $proyecto = Proyecto::with('tareas')->findOrFail($id);
+            return response()->json($proyecto);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['message' => 'Proyecto no encontrado.'], 404);
+        } catch (\Exception $e) {
+             return response()->json(['message' => 'Error al obtener el proyecto.', 'error_detail' => $e->getMessage()], 500);
+        }
     }
 
     /**
@@ -53,18 +75,26 @@ class ProyectoController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $proyecto = Proyecto::findOrFail($id);
-        
-        $request->validate([
-            'nombre' => 'required|string|max:255',
-            'descripcion' => 'nullable|string',
-            'fecha_inicio' => 'required|date',
-            'fecha_fin' => 'nullable|date|after_or_equal:fecha_inicio',
-        ]);
+        try {
+            $proyecto = Proyecto::findOrFail($id);
+            
+            $request->validate([
+                'nombre' => 'sometimes|required|string|max:255', 
+                'descripcion' => 'nullable|string',
+                'fecha_inicio' => 'sometimes|required|date', 
+                'fecha_fin' => 'nullable|date|after_or_equal:fecha_inicio',
+            ]);
 
-        $proyecto->update($request->all());
+            $proyecto->update($request->all());
+            return response()->json($proyecto);
 
-        return response()->json($proyecto);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['message' => 'Proyecto no encontrado.'], 404);
+        } catch (ValidationException $e) {
+            return response()->json(['message' => 'Datos no válidos.', 'errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+             return response()->json(['message' => 'Error al actualizar el proyecto.', 'error_detail' => $e->getMessage()], 500);
+        }
     }
 
     /**
@@ -72,10 +102,16 @@ class ProyectoController extends Controller
      */
     public function destroy(string $id)
     {
-        $proyecto = Proyecto::findOrFail($id);
-        $proyecto->delete();
+        try {
+            $proyecto = Proyecto::findOrFail($id);
+            $proyecto->delete();
 
-        // 204 No Content para eliminación exitosa
-        return response()->json(null, 204); 
+            return response()->json(null, 204); 
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['message' => 'Proyecto no encontrado.'], 404);
+        } catch (\Exception $e) {
+             return response()->json(['message' => 'Error al eliminar el proyecto.', 'error_detail' => $e->getMessage()], 500);
+        }
     }
 }

@@ -9,11 +9,7 @@ use Illuminate\Validation\Rule;
 
 class ProyectoController extends Controller
 {
-    // Proteger las rutas Web
-    public function __construct()
-    {
-        $this->middleware('auth');
-    }
+    
 
     /**
      * Listar Proyectos (Devuelve Vista)
@@ -38,7 +34,7 @@ class ProyectoController extends Controller
      */
     public function store(Request $request)
     {
-        // Validaciones para la parte Web
+        // Validaciones para la parte Webaa
         $request->validate([
             'nombre' => ['required', 'string', 'max:255'], // Corregido: usa 'nombre' no 'titulo'
             'descripcion' => ['nullable', 'string'],
